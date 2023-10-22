@@ -278,31 +278,12 @@ private:
   string hash(vector<string> &list) {
     string result;
 
-    for (const string &str : list) {
+    for (const string &str : list)
       result += str;
-    }
 
     result = urlEncode(result);
 
-    unsigned char hash[EVP_MAX_MD_SIZE];
-    unsigned int hashLength;
-
-    EVP_MD_CTX *md5ctx;
-    const EVP_MD *md5 = EVP_md5();
-
-    md5ctx = EVP_MD_CTX_new();
-    EVP_DigestInit_ex(md5ctx, md5, NULL);
-    EVP_DigestUpdate(md5ctx, result.c_str(), result.size());
-    EVP_DigestFinal_ex(md5ctx, hash, &hashLength);
-    EVP_MD_CTX_free(md5ctx);
-
-    std::stringstream ss;
-
-    for (int i = 0; i < hashLength; i++) {
-      ss << std::hex << std::setw(2) << std::setfill('0')
-         << static_cast<int>(hash[i]);
-    }
-    return ss.str();
+    return md5(result);
   }
 
   string hash(map<string, string> query) {

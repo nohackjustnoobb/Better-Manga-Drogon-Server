@@ -5,6 +5,8 @@ nlohmann_json/3.11.2
 lexbor/2.3.0
 re2/20230901
 drogon/1.8.6
+argon2/20190702
+jwt-cpp/0.6.0
 
 [generators]
 CMakeDeps

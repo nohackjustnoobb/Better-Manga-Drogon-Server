@@ -35,6 +35,8 @@ find_package(cpr CONFIG REQUIRED)
 find_package(OpenSSL REQUIRED)
 find_package(lexbor REQUIRED)
 find_package(re2 REQUIRED)
+find_package(argon2 REQUIRED CONFIG)
+find_package(jwt-cpp REQUIRED)
 
 target_link_libraries(${PROJECT_NAME}
     PUBLIC
@@ -43,9 +45,11 @@ target_link_libraries(${PROJECT_NAME}
     re2::re2
     nlohmann_json::nlohmann_json
     lexbor::lexbor_static
-    Drogon::Drogon)
+    Drogon::Drogon
+    argon2::argon2
+    jwt-cpp::jwt-cpp)
 
-# ##############################################################################
+# ##############################################################################'
 if(CMAKE_CXX_STANDARD LESS 17)
     message(FATAL_ERROR "c++17 or higher is required")
 elseif(CMAKE_CXX_STANDARD LESS 20)

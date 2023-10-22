@@ -4,10 +4,14 @@
 #include "TypeAliases.hpp"
 
 #include <algorithm>
+#include <argon2.h>
 #include <cctype>
 #include <cpr/cpr.h>
 #include <list>
 #include <locale>
+#include <openssl/aes.h>
+#include <openssl/evp.h>
+#include <openssl/rand.h>
 #include <re2/re2.h>
 #include <regex>
 
@@ -113,6 +117,50 @@ static Category stringToCategory(string category) {
   }
 
   return All;
+}
+
+static string sha256(const string &text) {
+  unsigned char hash[EVP_MAX_MD_SIZE];
+  unsigned int hashLength;
+
+  EVP_MD_CTX *sha256ctx;
+  const EVP_MD *sha256 = EVP_sha256();
+
+  sha256ctx = EVP_MD_CTX_new();
+  EVP_DigestInit_ex(sha256ctx, sha256, NULL);
+  EVP_DigestUpdate(sha256ctx, text.c_str(), text.size());
+  EVP_DigestFinal_ex(sha256ctx, hash, &hashLength);
+  EVP_MD_CTX_free(sha256ctx);
+
+  std::stringstream ss;
+
+  for (int i = 0; i < hashLength; i++) {
+    ss << std::hex << std::setw(2) << std::setfill('0')
+       << static_cast<int>(hash[i]);
+  }
+  return ss.str();
+}
+
+static string md5(const string &text) {
+  unsigned char hash[EVP_MAX_MD_SIZE];
+  unsigned int hashLength;
+
+  EVP_MD_CTX *md5ctx;
+  const EVP_MD *md5 = EVP_md5();
+
+  md5ctx = EVP_MD_CTX_new();
+  EVP_DigestInit_ex(md5ctx, md5, NULL);
+  EVP_DigestUpdate(md5ctx, text.c_str(), text.size());
+  EVP_DigestFinal_ex(md5ctx, hash, &hashLength);
+  EVP_MD_CTX_free(md5ctx);
+
+  std::stringstream ss;
+
+  for (int i = 0; i < hashLength; i++) {
+    ss << std::hex << std::setw(2) << std::setfill('0')
+       << static_cast<int>(hash[i]);
+  }
+  return ss.str();
 }
 
 template <typename T> static void releaseMemory(vector<T> vector) {
