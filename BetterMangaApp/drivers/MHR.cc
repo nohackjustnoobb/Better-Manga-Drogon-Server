@@ -34,7 +34,7 @@ public:
                            "https://mhfm10us.cdnmanhua.net",
                        }},
                       {"manga", {}}},
-                     {}};
+                     {{{"referer", "http://www.dm5.com/dm5api/"}}}};
   }
 
   vector<Manga *> getManga(vector<string> ids, bool showDetails) override {
@@ -122,9 +122,10 @@ public:
 
     string baseUrl = data["hostList"].get<vector<string>>().at(0);
     vector<string> result;
+    string urlQuery = data["query"].get<string>();
 
     for (const json &path : data["mangaSectionImages"]) {
-      string url = baseUrl + path.get<string>();
+      string url = baseUrl + path.get<string>() + urlQuery;
 
       result.push_back(url);
     }

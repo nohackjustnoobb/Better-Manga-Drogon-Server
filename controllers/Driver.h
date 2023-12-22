@@ -14,9 +14,9 @@ public:
   // "/absolute/path/{1}/{2}/list", Get); // path is
   // /absolute/path/{arg1}/{arg2}/list
 
-  METHOD_ADD(Driver::getDriver, "", Get);
-  METHOD_ADD(Driver::getProxy, "/proxy", Get);
-  METHOD_ADD(Driver::getOnline, "/online", Get);
+  METHOD_ADD(Driver::getDriver, "", Get, Options);
+  METHOD_ADD(Driver::getProxy, "/proxy", Get, Options);
+  METHOD_ADD(Driver::getOnline, "/online", Get, Options);
 
   METHOD_LIST_END
 

@@ -112,12 +112,75 @@ void User::me(const HttpRequestPtr &req,
 
   HttpResponsePtr resp = HttpResponse::newHttpResponse();
   resp->setContentTypeCode(CT_APPLICATION_JSON);
+  resp->setStatusCode(k200OK);
 
   json body;
-  body["email"] = user.getValueOfEmail();
+  if (req->getMethod() == Post) {
+    try {
+      json reqBody = json::parse(req->getBody());
+      string oldPassword = reqBody["oldPassword"].get<string>();
+      string newPassword = reqBody["newPassword"].get<string>();
 
-  resp->setStatusCode(k200OK);
+      if (!checkPassword(user.getValueOfPassword(), oldPassword))
+        throw "The old password is incorrect.";
+
+      if (!verifyPassword(newPassword))
+        throw "Passwords must contain at least eight characters, one letter "
+              "and one number.";
+
+      user.setPassword(hashPassword(newPassword));
+      userMapper.update(user);
+    } catch (const char *e) {
+      body["error"] = e;
+      resp->setStatusCode(k400BadRequest);
+    } catch (...) {
+      body["error"] = "\"oldPassword\" or \"newPassword\" are missing.";
+      resp->setStatusCode(k400BadRequest);
+    }
+  }
+
+  if (resp->statusCode() == k200OK)
+    body["email"] = user.getValueOfEmail();
+
   resp->setBody(body.dump());
+
+  callback(resp);
+}
+
+void User::clear(const HttpRequestPtr &req,
+                 std::function<void(const HttpResponsePtr &)> &&callback) {
+  auto user = tryAuthenticate(req, std::move(callback));
+
+  if (user.getId() == nullptr)
+    return;
+
+  HttpResponsePtr resp = HttpResponse::newHttpResponse();
+  resp->setContentTypeCode(CT_APPLICATION_JSON);
+  resp->setStatusCode(k204NoContent);
+
+  json body;
+  try {
+    string password = json::parse(req->getBody())["password"].get<string>();
+
+    if (!checkPassword(user.getValueOfPassword(), password))
+      throw "Incorrect password.";
+
+    collectionMapper.deleteBy(Criteria(
+        historyModel::Cols::_USERID, CompareOperator::EQ, user.getValueOfId()));
+    historyMapper.deleteBy(Criteria(historyModel::Cols::_USERID,
+                                    CompareOperator::EQ, user.getValueOfId()));
+
+  } catch (const char *e) {
+    body["error"] = e;
+    resp->setStatusCode(k400BadRequest);
+  } catch (...) {
+    body["error"] = "\"password\" is missing.";
+    resp->setStatusCode(k400BadRequest);
+  }
+
+  if (resp->statusCode() == k400BadRequest) {
+    resp->setBody(body.dump());
+  }
 
   callback(resp);
 }
@@ -370,10 +433,10 @@ string User::hashPassword(const string &password) {
   return string(encoded);
 }
 
-bool User::checkPassword(const string &password,
-                         const string &passwordToCheck) {
-  const char *cPassword = passwordToCheck.c_str();
-  return argon2id_verify(password.c_str(), cPassword, sizeof(cPassword)) == 0;
+bool User::checkPassword(const string &hashedPassword, const string &password) {
+  const char *c_password = password.c_str();
+  return argon2id_verify(hashedPassword.c_str(), c_password,
+                         sizeof(c_password)) == 0;
 }
 
 string User::createToken(userModel *user) {

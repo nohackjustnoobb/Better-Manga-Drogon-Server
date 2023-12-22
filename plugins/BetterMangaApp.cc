@@ -31,7 +31,7 @@ void BetterMangaApp::initAndStart(const Json::Value &config) {
   string version = app().getCustomConfig()["version"].asString();
   string drivers = getDrivers();
 
-  app().registerPostHandlingAdvice(
+  app().registerPreSendingAdvice(
       [version, drivers](const drogon::HttpRequestPtr &req,
                          const drogon::HttpResponsePtr &resp) {
         resp->addHeader("Version", version);

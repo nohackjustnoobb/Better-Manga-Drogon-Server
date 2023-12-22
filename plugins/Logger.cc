@@ -10,8 +10,8 @@
 using namespace drogon;
 
 void Logger::initAndStart(const Json::Value &config) {
-  app().registerPostHandlingAdvice([](const drogon::HttpRequestPtr &req,
-                                      const drogon::HttpResponsePtr &resp) {
+  app().registerPreSendingAdvice([](const drogon::HttpRequestPtr &req,
+                                    const drogon::HttpResponsePtr &resp) {
     std::string methods[] = {"Get",    "Post",    "Head",  "Put",
                              "Delete", "Options", "Patch", "Invalid"};
 

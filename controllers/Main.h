@@ -14,13 +14,12 @@ public:
   // "/absolute/path/{1}/{2}/list", Get); // path is
   // /absolute/path/{arg1}/{arg2}/list
 
-  ADD_METHOD_TO(Main::getInfo, "/", Get);
-  ADD_METHOD_TO(Main::getList, "/list", Get);
-  ADD_METHOD_TO(Main::getManga, "/manga", Get);
-  ADD_METHOD_TO(Main::getManga, "/manga", Post);
-  ADD_METHOD_TO(Main::getSuggestion, "/suggestion", Get);
-  ADD_METHOD_TO(Main::getSearch, "/search", Get);
-  ADD_METHOD_TO(Main::getChapter, "/chapter", Get);
+  ADD_METHOD_TO(Main::getInfo, "/", Get, Options);
+  ADD_METHOD_TO(Main::getList, "/list", Get, Options);
+  ADD_METHOD_TO(Main::getManga, "/manga", Get, Post, Options);
+  ADD_METHOD_TO(Main::getSuggestion, "/suggestion", Get, Options);
+  ADD_METHOD_TO(Main::getSearch, "/search", Get, Options);
+  ADD_METHOD_TO(Main::getChapter, "/chapter", Get, Options);
 
   METHOD_LIST_END
   // your declaration of processing function maybe like this:

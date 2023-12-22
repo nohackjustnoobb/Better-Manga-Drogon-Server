@@ -31,7 +31,7 @@ public:
                            "https://mhfm10us.cdnmanhua.net",
                        }},
                       {"manga", {}}},
-                     {}};
+                     {{{"referer", "http://www.dm5.com/dm5api/"}}}};
   }
 
   vector<Manga *> getManga(vector<string> ids, bool showDetails) override {
@@ -152,7 +152,7 @@ public:
 
       // extract latest
       Node *latestNode = huge->find("div.bottom > a.btn-2");
-      string latest = latestNode->getAttribute("title");
+      string latest = strip(latestNode->getAttribute("title"));
       size_t pos = latest.find(title + " ");
       if (pos != std::string::npos) {
         latest.replace(pos, (title + " ").length(), "");
@@ -230,7 +230,7 @@ private:
     delete temp;
 
     temp = latestNode->find("a");
-    string latest = temp->text();
+    string latest = strip(temp->text());
 
     // release memory allocated
     delete temp;
@@ -269,7 +269,7 @@ private:
 
     // extract isEnded & latest
     Node *latestNode = node->find("div.detail-list-title > span.s > span > a");
-    string latest = latestNode->text();
+    string latest = strip(latestNode->text());
 
     // release memory allocated
     delete latestNode;
@@ -355,8 +355,9 @@ private:
                                 const int &len2, const string &valuesString) {
     string decoded = decompress(encoded, len1, len2, valuesString);
 
-    RE2::GlobalReplace(&decoded, RE2("(.+\\[\\\\\')|\\];"), "");
-    vector<string> result = split(decoded, RE2("\\?.*?[\\\\\',]+"));
+    RE2::GlobalReplace(&decoded, RE2(R"((.+\[\\')|\];)"), "");
+
+    vector<string> result = split(decoded, RE2(R"(\\',\\'|\\')"));
 
     return result;
   }

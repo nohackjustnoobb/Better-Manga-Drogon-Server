@@ -26,14 +26,13 @@ public:
   // "/absolute/path/{1}/{2}/list", Get); // path is
   // /absolute/path/{arg1}/{arg2}/list
 
-  METHOD_ADD(User::create, "/create", Post);
-  METHOD_ADD(User::token, "/token", Post);
-  METHOD_ADD(User::me, "/me", Get);
-  METHOD_ADD(User::collections, "/collections", Get);
-  METHOD_ADD(User::collections, "/collections", Post);
-  METHOD_ADD(User::collections, "/collections", Delete);
-  METHOD_ADD(User::histories, "/histories", Get);
-  METHOD_ADD(User::histories, "/histories", Post);
+  METHOD_ADD(User::create, "/create", Post, Options);
+  METHOD_ADD(User::token, "/token", Post, Options);
+  METHOD_ADD(User::clear, "/clear", Post, Options);
+
+  METHOD_ADD(User::me, "/me", Get, Post, Options);
+  METHOD_ADD(User::collections, "/collections", Get, Post, Delete, Options);
+  METHOD_ADD(User::histories, "/histories", Get, Post, Options);
 
   METHOD_LIST_END
   // your declaration of processing function maybe like this:
@@ -50,6 +49,9 @@ public:
 
   void me(const HttpRequestPtr &req,
           std::function<void(const HttpResponsePtr &)> &&callback);
+
+  void clear(const HttpRequestPtr &req,
+             std::function<void(const HttpResponsePtr &)> &&callback);
 
   void collections(const HttpRequestPtr &req,
                    std::function<void(const HttpResponsePtr &)> &&callback);
