@@ -254,7 +254,19 @@ private:
     vector<Chapter> serial;
     vector<Chapter> extra;
 
-    vector<Node *> chaptersNode = node->findAll("div.chapter-list");
+    vector<Node *> chaptersNode;
+    Node *tryAdult = node->find("#__VIEWSTATE");
+
+    if (tryAdult == nullptr) {
+      chaptersNode = node->findAll("div.chapter-list");
+    } else {
+      string encodedElements = tryAdult->getAttribute("value");
+      chaptersNode = (new Node(convert.to_bytes(lzstring::decompressFromBase64(
+                          convert.from_bytes(encodedElements)))))
+                         ->findAll("div.chapter-list");
+      delete tryAdult;
+    }
+
     if (chaptersNode.size() >= 1)
       pushChapters(chaptersNode.at(0), serial);
 

@@ -83,8 +83,10 @@ void Main::getManga(const HttpRequestPtr &req,
   vector<string> ids;
   if (req->getMethod() == Get) {
     auto tryIds = parameters.find("ids");
-    isId = tryIds != parameters.end();
-    ids = split(tryIds->second, ",");
+    if (tryIds != parameters.end()) {
+      ids = split(tryIds->second, ",");
+      isId = true;
+    }
   } else {
     try {
       json body = json::parse(req->getBody());

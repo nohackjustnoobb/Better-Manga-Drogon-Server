@@ -1,10 +1,14 @@
 #include <drogon/drogon.h>
 
+#include "utils/dotenv.h"
 #include <fstream>
 #include <re2/re2.h>
 #include <string>
 
 int main() {
+  dotenv::init();
+  dotenv::init("../.env");
+
   // Load config file
   std::string configPaths[] = {"../config.json", "config.json"};
   for (const std::string &path : configPaths) {

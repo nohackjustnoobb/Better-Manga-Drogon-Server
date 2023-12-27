@@ -21,8 +21,6 @@ using namespace drogon;
 using json = nlohmann::json;
 
 void BetterMangaApp::initAndStart(const Json::Value &config) {
-  dotenv::init();
-  dotenv::init("../.env");
 
   drivers.push_back(new MHR());
   drivers.push_back(new DM5());
