@@ -90,7 +90,18 @@ public:
       }
     }
 
-    return nodes.size() < 1 ? nullptr : nodes.at(0);
+    if (nodes.size() < 1)
+      throw "Element not found";
+
+    return nodes.at(0);
+  }
+
+  Node *tryFind(string selector) {
+    try {
+      return this->find(selector);
+    } catch (...) {
+      return nullptr;
+    }
   }
 
   vector<Node *> findAll(string selector) {

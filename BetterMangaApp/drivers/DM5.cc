@@ -37,16 +37,22 @@ public:
   vector<Manga *> getManga(vector<string> ids, bool showDetails) override {
     vector<Manga *> result;
 
+    bool isError = false;
     vector<std::thread> threads;
     std::mutex mutex;
     auto fetchId = [&](const string &id, vector<Manga *> &result) {
-      cpr::Response r = cpr::Get(cpr::Url{baseUrl + "manhua-" + id}, header,
-                                 cpr::Cookies{{"isAdult", "1"}});
-      Node *body = new Node(r.text);
+      try {
+        cpr::Response r =
+            cpr::Get(cpr::Url{baseUrl + "manhua-" + id}, header,
+                     cpr::Cookies{{"isAdult", "1"}}, cpr::Timeout{5000});
+        Node *body = new Node(r.text);
 
-      Manga *manga = extractDetails(body, id, showDetails);
-      std::lock_guard<std::mutex> guard(mutex);
-      result.push_back(manga);
+        Manga *manga = extractDetails(body, id, showDetails);
+        std::lock_guard<std::mutex> guard(mutex);
+        result.push_back(manga);
+      } catch (...) {
+        isError = true;
+      }
     };
 
     // create threads
@@ -59,12 +65,15 @@ public:
       th.join();
     }
 
+    if (isError)
+      throw "Failed to fetch manga";
+
     return result;
   };
 
   vector<string> getChapter(string id, string extraData) override {
-    cpr::Response r =
-        cpr::Get(cpr::Url{"https://www.manhuaren.com/m" + id}, header);
+    cpr::Response r = cpr::Get(cpr::Url{"https://www.manhuaren.com/m" + id},
+                               header, cpr::Timeout{5000});
 
     vector<string> result;
     re2::StringPiece input(r.text);
@@ -89,7 +98,7 @@ public:
         cpr::Get(cpr::Url{baseUrl + "manhua-list-tag" +
                           std::to_string(categoryId[category]) + "-st" +
                           std::to_string(status) + "-p" + std::to_string(page)},
-                 header);
+                 cpr::Timeout{5000}, header);
 
     vector<Manga *> result;
 
@@ -108,7 +117,7 @@ public:
     cpr::Response r =
         cpr::Get(cpr::Url{baseUrl + "search.ashx?t=" +
                           urlEncode(chineseConverter.toSimplified(keyword))},
-                 header);
+                 cpr::Timeout{5000}, header);
 
     vector<string> result;
 
@@ -126,12 +135,12 @@ public:
         cpr::Get(cpr::Url{baseUrl + "search?title=" +
                           urlEncode(chineseConverter.toSimplified(keyword)) +
                           "&page=" + std::to_string(page)},
-                 header);
+                 header, cpr::Timeout{5000});
 
     vector<Manga *> result;
     Node *body = new Node(r.text);
 
-    Node *huge = body->find("div.banner_detail_form");
+    Node *huge = body->tryFind("div.banner_detail_form");
     if (huge != nullptr) {
       // extract thumbnail
       Node *thumbnailNode = huge->find("img");
@@ -241,9 +250,6 @@ private:
   Manga *extractDetails(Node *node, const string &id, const bool showDetails) {
     Node *infoNode = node->find("div.info");
 
-    if (infoNode == nullptr)
-      throw "Cannot extract details";
-
     // extract title
     Node *titleNode = infoNode->find("p.title");
     string title = strip(titleNode->content());
@@ -331,17 +337,17 @@ private:
     vector<Chapter> serial;
     vector<Chapter> extra;
 
-    Node *serialNode = node->find("#detail-list-select-1");
+    Node *serialNode = node->tryFind("#detail-list-select-1");
     if (serialNode != nullptr)
       pushChapters(serialNode, serial);
     delete serialNode;
 
-    Node *extraNode = node->find("#detail-list-select-2");
+    Node *extraNode = node->tryFind("#detail-list-select-2");
     if (extraNode != nullptr)
       pushChapters(extraNode, serial);
     delete extraNode;
 
-    extraNode = node->find("#detail-list-select-3");
+    extraNode = node->tryFind("#detail-list-select-3");
     if (extraNode != nullptr)
       pushChapters(extraNode, serial);
     delete extraNode;

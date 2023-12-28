@@ -29,15 +29,21 @@ public:
   vector<Manga *> getManga(vector<string> ids, bool showDetails) override {
     vector<Manga *> result;
 
+    bool isError = false;
     vector<std::thread> threads;
     std::mutex mutex;
     auto fetchId = [&](const string &id, vector<Manga *> &result) {
-      cpr::Response r = cpr::Get(cpr::Url{baseUrl + "comic/" + id});
-      Node *body = new Node(r.text);
+      try {
+        cpr::Response r =
+            cpr::Get(cpr::Url{baseUrl + "comic/" + id}, cpr::Timeout{5000});
+        Node *body = new Node(r.text);
 
-      Manga *manga = extractDetails(body, id, showDetails);
-      std::lock_guard<std::mutex> guard(mutex);
-      result.push_back(manga);
+        Manga *manga = extractDetails(body, id, showDetails);
+        std::lock_guard<std::mutex> guard(mutex);
+        result.push_back(manga);
+      } catch (...) {
+        isError = true;
+      }
     };
 
     // create threads
@@ -50,6 +56,9 @@ public:
       th.join();
     }
 
+    if (isError)
+      throw "Failed to fetch manga";
+
     return result;
   };
 
@@ -57,7 +66,8 @@ public:
     vector<string> result;
 
     cpr::Response r =
-        cpr::Get(cpr::Url{baseUrl + "comic/" + extraData + "/" + id + ".html"});
+        cpr::Get(cpr::Url{baseUrl + "comic/" + extraData + "/" + id + ".html"},
+                 cpr::Timeout{5000});
 
     re2::StringPiece input(r.text);
     string encoded, valuesString, len1String, len2String;
@@ -100,7 +110,7 @@ public:
     // add page
     url += "index_p" + std::to_string(page) + ".html";
 
-    cpr::Response r = cpr::Get(cpr::Url{url});
+    cpr::Response r = cpr::Get(cpr::Url{url}, cpr::Timeout{5000});
     Node *body = new Node(r.text);
 
     vector<Manga *> result;
@@ -118,7 +128,8 @@ public:
 
   vector<Manga *> search(string keyword, int page) override {
     cpr::Response r = cpr::Get(cpr::Url{baseUrl + "s/" + keyword + "_p" +
-                                        std::to_string(page) + ".html"});
+                                        std::to_string(page) + ".html"},
+                               cpr::Timeout{5000});
     Node *body = new Node(r.text);
 
     vector<Manga *> result;
@@ -172,15 +183,12 @@ private:
   Manga *extractDetails(Node *node, const string &id, const bool showDetails) {
     Node *details = node->find("div.book-cover");
 
-    if (details == nullptr)
-      throw "Cannot extract details";
-
     Node *thumbnailNode = details->find("img");
     string thumbnail = "https:" + thumbnailNode->getAttribute("src");
     string title = thumbnailNode->getAttribute("alt");
     delete thumbnailNode;
 
-    Node *isEndedNode = details->find("span.finish");
+    Node *isEndedNode = details->tryFind("span.finish");
     bool isEnded = isEndedNode != nullptr;
     delete isEndedNode;
 
@@ -255,7 +263,7 @@ private:
     vector<Chapter> extra;
 
     vector<Node *> chaptersNode;
-    Node *tryAdult = node->find("#__VIEWSTATE");
+    Node *tryAdult = node->tryFind("#__VIEWSTATE");
 
     if (tryAdult == nullptr) {
       chaptersNode = node->findAll("div.chapter-list");
@@ -292,7 +300,7 @@ private:
     string thumbnail = "https:" + thumbnailNode->getAttribute("src");
     delete thumbnailNode;
 
-    Node *isEndedNode = details->find("span.fd");
+    Node *isEndedNode = details->tryFind("span.fd");
     bool isEnded = isEndedNode != nullptr;
     delete isEndedNode;
 

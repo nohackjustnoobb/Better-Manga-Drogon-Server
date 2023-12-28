@@ -41,24 +41,30 @@ public:
     vector<Manga *> result;
 
     if (showDetails) {
+      bool isError = false;
       vector<std::thread> threads;
       std::mutex mutex;
       auto fetchId = [&](const string &id, vector<Manga *> &result) {
-        map<string, string> query = {
-            {"mangaId", id},
-            {"mangaDetailVersion", ""},
-        };
+        try {
+          map<string, string> query = {
+              {"mangaId", id},
+              {"mangaDetailVersion", ""},
+          };
 
-        query.insert(baseQuery.begin(), baseQuery.end());
-        query["gsn"] = hash(query);
+          query.insert(baseQuery.begin(), baseQuery.end());
+          query["gsn"] = hash(query);
 
-        cpr::Response r = cpr::Get(cpr::Url{baseUrl + "v1/manga/getDetail"},
-                                   mapToParameters(query), header);
-        json data = json::parse(r.text);
+          cpr::Response r =
+              cpr::Get(cpr::Url{baseUrl + "v1/manga/getDetail"},
+                       mapToParameters(query), header, cpr::Timeout{5000});
+          json data = json::parse(r.text);
 
-        Manga *manga = convertDetails(data["response"]);
-        std::lock_guard<std::mutex> guard(mutex);
-        result.push_back(manga);
+          Manga *manga = convertDetails(data["response"]);
+          std::lock_guard<std::mutex> guard(mutex);
+          result.push_back(manga);
+        } catch (...) {
+          isError = true;
+        }
       };
 
       // create threads
@@ -70,6 +76,9 @@ public:
       for (auto &th : threads) {
         th.join();
       }
+
+      if (isError)
+        throw "Failed to fetch manga";
 
     } else {
 
@@ -116,8 +125,9 @@ public:
     query.insert(baseQuery.begin(), baseQuery.end());
     query["gsn"] = hash(query);
 
-    cpr::Response r = cpr::Get(cpr::Url{baseUrl + "v1/manga/getRead"},
-                               mapToParameters(query), header);
+    cpr::Response r =
+        cpr::Get(cpr::Url{baseUrl + "v1/manga/getRead"}, mapToParameters(query),
+                 header, cpr::Timeout{5000});
     json data = json::parse(r.text)["response"];
 
     string baseUrl = data["hostList"].get<vector<string>>().at(0);
@@ -147,8 +157,9 @@ public:
     query.insert(baseQuery.begin(), baseQuery.end());
     query["gsn"] = hash(query);
 
-    cpr::Response r = cpr::Get(cpr::Url{baseUrl + "v2/manga/getCategoryMangas"},
-                               mapToParameters(query), header);
+    cpr::Response r =
+        cpr::Get(cpr::Url{baseUrl + "v2/manga/getCategoryMangas"},
+                 mapToParameters(query), header, cpr::Timeout{5000});
     json data = json::parse(r.text);
 
     vector<Manga *> result;
@@ -171,8 +182,9 @@ public:
     query.insert(baseQuery.begin(), baseQuery.end());
     query["gsn"] = hash(query);
 
-    cpr::Response r = cpr::Get(cpr::Url{baseUrl + "v1/search/getKeywordMatch"},
-                               mapToParameters(query), header);
+    cpr::Response r =
+        cpr::Get(cpr::Url{baseUrl + "v1/search/getKeywordMatch"},
+                 mapToParameters(query), header, cpr::Timeout{5000});
 
     // parse & extract the data
     json data = json::parse(r.text);
@@ -198,8 +210,9 @@ public:
     query.insert(baseQuery.begin(), baseQuery.end());
     query["gsn"] = hash(query);
 
-    cpr::Response r = cpr::Get(cpr::Url{baseUrl + "v1/search/getSearchManga"},
-                               mapToParameters(query), header);
+    cpr::Response r =
+        cpr::Get(cpr::Url{baseUrl + "v1/search/getSearchManga"},
+                 mapToParameters(query), header, cpr::Timeout{5000});
     json data = json::parse(r.text);
 
     vector<string> result;
