@@ -46,7 +46,7 @@ public:
   bool isEnded;
 
   Manga(BaseDriver *driver, const string &id, const string &title,
-        const string &thumbnail, const string &latest, bool isEnded)
+        const string &thumbnail, const string &latest, const bool &isEnded)
       : driver(driver), id(id), title(title), thumbnail(thumbnail),
         latest(latest), isEnded(isEnded) {}
 
@@ -75,7 +75,7 @@ public:
 
   DetailsManga(BaseDriver *driver, const string &id, const string &title,
                const string &thumbnail, const string &latest,
-               const vector<string> &authors, bool isEnded,
+               const vector<string> &authors, const bool &isEnded,
                const string &description, const vector<Category> &categories,
                const Chapters &chapters)
       : Manga(driver, id, title, thumbnail, latest, isEnded), authors(authors),

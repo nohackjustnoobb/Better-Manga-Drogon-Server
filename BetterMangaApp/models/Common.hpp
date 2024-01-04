@@ -1,8 +1,15 @@
 #pragma once
 
+#include <string>
+
 class Manga;
 
 class DetailsManga;
+
+struct PreviewManga {
+  std::string id;
+  std::string latest;
+};
 
 enum Status {
   Any,

@@ -14,6 +14,7 @@ public:
     id = "DM5";
     supportSuggestion = true;
     recommendedChunkSize = 10;
+    version = "0.1.0-beta.0";
     for (const auto &pair : categoryId) {
       supportedCategories.push_back(pair.first);
     }

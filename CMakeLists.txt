@@ -7,16 +7,7 @@ check_include_file_cxx(any HAS_ANY)
 check_include_file_cxx(string_view HAS_STRING_VIEW)
 check_include_file_cxx(coroutine HAS_COROUTINE)
 
-if(NOT "${CMAKE_CXX_STANDARD}" STREQUAL "")
-# Do nothing
-elseif(HAS_ANY AND HAS_STRING_VIEW AND HAS_COROUTINE)
-    set(CMAKE_CXX_STANDARD 20)
-elseif(HAS_ANY AND HAS_STRING_VIEW)
-    set(CMAKE_CXX_STANDARD 17)
-else()
-    set(CMAKE_CXX_STANDARD 14)
-endif()
-
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
@@ -30,6 +21,7 @@ add_executable(${PROJECT_NAME} main.cc)
 #
 # and comment out the following lines
 find_package(Drogon CONFIG REQUIRED)
+find_package(fmt REQUIRED CONFIG)
 find_package(nlohmann_json CONFIG REQUIRED)
 find_package(cpr CONFIG REQUIRED)
 find_package(OpenSSL REQUIRED)
@@ -37,6 +29,7 @@ find_package(lexbor REQUIRED)
 find_package(re2 REQUIRED)
 find_package(argon2 REQUIRED CONFIG)
 find_package(jwt-cpp REQUIRED)
+find_package(SQLiteCpp REQUIRED)
 
 target_link_libraries(${PROJECT_NAME}
     PUBLIC
@@ -47,7 +40,9 @@ target_link_libraries(${PROJECT_NAME}
     lexbor::lexbor_static
     Drogon::Drogon
     argon2::argon2
-    jwt-cpp::jwt-cpp)
+    jwt-cpp::jwt-cpp
+    fmt::fmt
+    SQLiteCpp)
 
 # ##############################################################################'
 if(CMAKE_CXX_STANDARD LESS 17)
@@ -77,7 +72,6 @@ target_sources(${PROJECT_NAME}
     PRIVATE
     ${SRC_DIR}
     ${UTILS_SRC}
-    ${BMA_SRC}
     ${PLUGIN_SRC}
     ${CTL_SRC}
     ${MODEL_SRC})

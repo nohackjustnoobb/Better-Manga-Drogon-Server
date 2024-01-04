@@ -8,7 +8,7 @@
     "db_clients": [
         {
             "rdbms": "sqlite3",
-            "filename": "db.sqlite3"
+            "filename": "../db.sqlite3"
         }
     ],
     "app": {

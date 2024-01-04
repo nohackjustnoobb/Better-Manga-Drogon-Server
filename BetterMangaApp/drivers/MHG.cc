@@ -1,7 +1,7 @@
 #include "../../utils/Node.hpp"
 #include "../../utils/Utils.hpp"
 #include "../../utils/lz-string.hpp"
-#include "../models/BaseDriver.hpp"
+#include "../models/ActiveDriver.hpp"
 #include "../models/Manga.hpp"
 
 #include <codecvt>
@@ -12,12 +12,14 @@
 #include <nlohmann/json.hpp>
 #include <thread>
 
-class MHG : public BaseDriver {
+class MHG : public ActiveDriver {
 public:
   MHG() {
     id = "MHG";
     supportSuggestion = false;
     recommendedChunkSize = 5;
+    version = "0.1.0-beta.0";
+    timeout = 10;
 
     for (const auto &pair : categoryText) {
       supportedCategories.push_back(pair.first);
@@ -26,7 +28,8 @@ public:
                      {{"referer", "https://tw.manhuagui.com"}}};
   }
 
-  vector<Manga *> getManga(vector<string> ids, bool showDetails) override {
+  vector<Manga *> getManga(vector<string> ids, bool showDetails,
+                           string proxy) override {
     vector<Manga *> result;
 
     bool isError = false;
@@ -34,8 +37,12 @@ public:
     std::mutex mutex;
     auto fetchId = [&](const string &id, vector<Manga *> &result) {
       try {
-        cpr::Response r =
-            cpr::Get(cpr::Url{baseUrl + "comic/" + id}, cpr::Timeout{5000});
+        cpr::Url url{baseUrl + "comic/" + id};
+        cpr::Response r = proxy == ""
+                              ? cpr::Get(url, cpr::Timeout{5000})
+                              : cpr::Get(url, cpr::Timeout{5000},
+                                         cpr::Proxies{{"https", proxy}});
+
         Node *body = new Node(r.text);
 
         Manga *manga = extractDetails(body, id, showDetails);
@@ -62,12 +69,14 @@ public:
     return result;
   };
 
-  vector<string> getChapter(string id, string extraData) override {
+  vector<string> getChapter(string id, string extraData,
+                            string proxy) override {
     vector<string> result;
 
-    cpr::Response r =
-        cpr::Get(cpr::Url{baseUrl + "comic/" + extraData + "/" + id + ".html"},
-                 cpr::Timeout{5000});
+    cpr::Url url{baseUrl + "comic/" + extraData + "/" + id + ".html"};
+    cpr::Response r = proxy == "" ? cpr::Get(url, cpr::Timeout{5000})
+                                  : cpr::Get(url, cpr::Timeout{5000},
+                                             cpr::Proxies{{"https", proxy}});
 
     re2::StringPiece input(r.text);
     string encoded, valuesString, len1String, len2String;
@@ -84,6 +93,8 @@ public:
           lzstring::decompressFromBase64(convert.from_bytes(valuesString)));
 
       result = decodeChapters(encoded, len1, len2, valuesString);
+    } else {
+      throw "Can't parse the data";
     }
 
     return result;
@@ -144,6 +155,36 @@ public:
 
     return result;
   };
+
+  vector<PreviewManga> getUpdates(string proxy = "") override {
+    cpr::Url url{"https://tw.manhuagui.com/update/d3.html"};
+    cpr::Response r = proxy == "" ? cpr::Get(url, cpr::Timeout{5000})
+                                  : cpr::Get(url, cpr::Timeout{5000},
+                                             cpr::Proxies{{"https", proxy}});
+
+    Node *body = new Node(r.text);
+
+    vector<PreviewManga> result;
+    vector<Node *> items =
+        body->findAll("div.latest-cont > div.latest-list > ul > li");
+    for (Node *node : items) {
+      Node *details = node->find("a");
+      string id = details->getAttribute("href");
+      id = id = id.substr(7, id.length() - 8);
+
+      Node *latestNode = details->find("span.tt");
+      string latest = latestNode->text();
+      RE2::GlobalReplace(&latest, RE2("更新至|共"), "");
+      latest = strip(latest);
+
+      delete latestNode;
+      delete details;
+
+      result.push_back({id, latest});
+    }
+
+    return result;
+  }
 
   bool checkOnline() override {
     return cpr::Get(cpr::Url{baseUrl}, cpr::Timeout{5000}).status_code != 0;
@@ -306,7 +347,7 @@ private:
 
     Node *latestNode = details->find("span.tt");
     string latest = latestNode->text();
-    RE2::GlobalReplace(&latest, RE2("更新至|\\[完\\]|\\[全\\]"), "");
+    RE2::GlobalReplace(&latest, RE2(R"(更新至|\[完\]|\[全\]|共)"), "");
     latest = strip(latest);
     delete latestNode;
 

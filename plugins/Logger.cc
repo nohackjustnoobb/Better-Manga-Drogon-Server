@@ -6,6 +6,7 @@
 
 #include "Logger.h"
 #include <drogon/HttpController.h>
+#include <fmt/core.h>
 
 using namespace drogon;
 
@@ -15,16 +16,9 @@ void Logger::initAndStart(const Json::Value &config) {
     std::string methods[] = {"Get",    "Post",    "Head",  "Put",
                              "Delete", "Options", "Patch", "Invalid"};
 
-    std::string msg;
-    msg += methods[req->getMethod()];
-    msg += " ";
-    msg += req->getPeerAddr().toIp();
-    msg += " -> ";
-    msg += req->getPath();
-    msg += " ";
-    msg += std::to_string(resp->getStatusCode());
-
-    LOG_COMPACT_INFO << msg;
+    LOG_COMPACT_INFO << fmt::format("{} {} -> {} {}", methods[req->getMethod()],
+                                    req->getPeerAddr().toIp(), req->getPath(),
+                                    std::to_string(resp->getStatusCode()));
   });
 
   LOG_COMPACT_DEBUG << "Logger initialized and started";

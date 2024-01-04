@@ -25,6 +25,7 @@ class BaseDriver {
 
 public:
   string id;
+  string version;
   int recommendedChunkSize = 0;
   bool supportSuggestion;
   vector<Category> supportedCategories;

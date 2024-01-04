@@ -7,13 +7,17 @@
 #include <argon2.h>
 #include <cctype>
 #include <cpr/cpr.h>
+#include <iostream>
 #include <list>
 #include <locale>
+#include <memory>
 #include <openssl/aes.h>
 #include <openssl/evp.h>
 #include <openssl/rand.h>
 #include <re2/re2.h>
 #include <regex>
+#include <stdexcept>
+#include <string>
 
 static cpr::Parameters mapToParameters(const map<string, string> &query) {
   cpr::Parameters parameters;
@@ -74,22 +78,34 @@ static string strip(const string &s) {
 
 static string decompress(const string &encoded, const int &len1,
                          const int &len2, const string &valuesString) {
-  map<string, string> pairs;
 
-  vector<string> values = split(valuesString, RE2("[|]"));
+  vector<string> values = split(valuesString, RE2(R"(\|)"));
+  values.push_back("");
+
   std::function<string(int)> genKey = [&](int index) -> string {
-    int lastChar = index % len1;
+    std::function<string(int, int)> itr = [&](int value, int num) -> string {
+      string d =
+          "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
+      return value <= 0 ? "" : itr(int(value / num), num) + d[value % num];
+    };
 
+    std::function<string(int, int)> tr = [&](int value, int num) -> string {
+      string tmp = itr(value, num);
+      return tmp == "" ? "0" : tmp;
+    };
+
+    int lastChar = index % len1;
     return (index < len1 ? "" : genKey(index / len1)) +
-           (char)(lastChar > 35
-                      ? lastChar + 29
-                      : "0123456789abcdefghijklmnopqrstuvwxyz"[lastChar]);
+           (lastChar > 35 ? string(1, (char)(lastChar + 29))
+                          : tr(lastChar, 36));
   };
 
-  int i = len2;
-  while (i--) {
+  int i = len2 - 1;
+  map<string, string> pairs;
+  while (i + 1) {
     string key = genKey(i);
-    pairs[key] = values.at(i) != "" ? values[i] : key;
+    pairs[key] = values.at(i) == "" ? key : values[i];
+    i--;
   }
 
   string decoded = encoded;
@@ -111,7 +127,7 @@ static string categoryToString(Category category) {
 }
 
 static Category stringToCategory(string category) {
-  for (int i = 0; i < categoryString->length(); i++) {
+  for (int i = 0; i < sizeof(categoryString) / sizeof(categoryString[0]); i++) {
     if (category == categoryString[i])
       return (Category)i;
   }

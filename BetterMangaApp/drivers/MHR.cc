@@ -16,6 +16,7 @@ class MHR : public BaseDriver {
 public:
   MHR() {
     id = "MHR";
+    version = "0.1.0-beta.0";
     supportSuggestion = true;
     for (const auto &pair : categoryId) {
       supportedCategories.push_back(pair.first);

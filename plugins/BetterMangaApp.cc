@@ -6,6 +6,7 @@
 
 #include "BetterMangaApp.h"
 
+#include "../BetterMangaApp/drivers/ActiveAdapter.cc"
 #include "../BetterMangaApp/drivers/DM5.cc"
 #include "../BetterMangaApp/drivers/MHG.cc"
 #include "../BetterMangaApp/drivers/MHR.cc"
@@ -24,7 +25,7 @@ void BetterMangaApp::initAndStart(const Json::Value &config) {
 
   drivers.push_back(new MHR());
   drivers.push_back(new DM5());
-  drivers.push_back(new MHG());
+  drivers.push_back(new ActiveAdapter(new MHG()));
 
   string version = app().getCustomConfig()["version"].asString();
   string drivers = getDrivers();
@@ -35,7 +36,7 @@ void BetterMangaApp::initAndStart(const Json::Value &config) {
         resp->addHeader("Version", version);
         resp->addHeader("Available-Drivers", drivers);
         resp->addHeader("Access-Control-Expose-Headers",
-                        "Version, Available-Drivers");
+                        "Version, Available-Drivers, Is-Next");
         resp->addHeader("Access-Control-Allow-Origin", "*");
       });
 
@@ -79,6 +80,7 @@ HttpResponsePtr BetterMangaApp::getInfo(string id) {
   info["supportedCategories"] = categories;
   info["recommendedChunkSize"] = driver->recommendedChunkSize;
   info["supportSuggestion"] = driver->supportSuggestion;
+  info["version"] = driver->version;
 
   HttpResponsePtr resp = HttpResponse::newHttpResponse();
   resp->setStatusCode(k200OK);
@@ -102,7 +104,7 @@ HttpResponsePtr BetterMangaApp::getProxy(vector<string> ids) {
     drivers = this->drivers;
   }
 
-  json result;
+  json result = json::array();
   for (BaseDriver *driver : drivers) {
     result[driver->id] = driver->proxySettings.toJson();
   }
@@ -176,7 +178,7 @@ HttpResponsePtr BetterMangaApp::getList(string id, Category category, int page,
 
   try {
     vector<Manga *> mangas = driver->getList(category, page, status);
-    json result;
+    json result = json::array();
     for (Manga *manga : mangas) {
       if (useProxy)
         manga->useProxy();
@@ -235,7 +237,7 @@ HttpResponsePtr BetterMangaApp::getManga(string id, vector<string> ids,
 
   try {
     vector<Manga *> mangas = driver->getManga(ids, showAll);
-    json result;
+    json result = json::array();
     for (Manga *manga : mangas) {
       if (useProxy)
         manga->useProxy();
@@ -247,7 +249,7 @@ HttpResponsePtr BetterMangaApp::getManga(string id, vector<string> ids,
     resp->setBody(result.dump());
 
     return resp;
-  } catch (...) {
+  } catch (string e) {
     resp->setStatusCode(k400BadRequest);
     resp->setBody("{\"error\": \"An unexpected error occurred when trying to "
                   "get manga.\"}");
@@ -268,7 +270,7 @@ HttpResponsePtr BetterMangaApp::getSearch(string id, string keyword, int page,
 
   try {
     vector<Manga *> mangas = driver->search(keyword, page);
-    json result;
+    json result = json::array();
     for (Manga *manga : mangas) {
       if (useProxy)
         manga->useProxy();
@@ -301,7 +303,7 @@ HttpResponsePtr BetterMangaApp::getChapter(string driverId, string id,
 
   try {
     vector<string> urls = driver->getChapter(id, extraData);
-    json result;
+    json result = json::array();
     for (const string &manga : urls)
       result.push_back(useProxy ? driver->useProxy(manga, "manga") : manga);
 

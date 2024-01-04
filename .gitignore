@@ -586,3 +586,4 @@ Temporary Items
 build/
 .env
 **.sqlite3
+data/

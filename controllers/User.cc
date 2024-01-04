@@ -355,17 +355,17 @@ void User::histories(const HttpRequestPtr &req,
                       .limit(50)
                       .offset((page - 1) * 50);
 
-    vector<historyModel> result;
-    if (datetime == -1)
-      result =
-          mapper.findBy(Criteria(historyModel::Cols::_USERID,
-                                 CompareOperator::EQ, user.getValueOfId()));
-    else
-      result =
-          mapper.findBy(Criteria(historyModel::Cols::_USERID,
-                                 CompareOperator::EQ, user.getValueOfId()) &&
-                        Criteria(historyModel::Cols::_UPDATEDATETIME,
-                                 CompareOperator::GE, datetime));
+    Criteria criteria =
+        datetime == -1 ? Criteria(historyModel::Cols::_USERID,
+                                  CompareOperator::EQ, user.getValueOfId())
+                       : (Criteria(historyModel::Cols::_USERID,
+                                   CompareOperator::EQ, user.getValueOfId()) &&
+                          Criteria(historyModel::Cols::_UPDATEDATETIME,
+                                   CompareOperator::GE, datetime));
+
+    vector<historyModel> result = mapper.findBy(criteria);
+    size_t count = mapper.count(criteria);
+    resp->addHeader("Is-Next", count > page * 50 ? "1" : "0");
 
     json body = json::array();
     for (const auto &item : result) {
